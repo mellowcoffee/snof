@@ -1,12 +1,12 @@
 [package]
 name = "snof"
+description = "Unique ID generator"
 version = "0.1.0"
 edition = "2024"
 authors = ["mellowcoffee"]
 repository = "https://github.com/mellowcoffee/snof"
 homepage = "https://github.com/mellowcoffee/snof"
-readme = "https://github.com/mellowcoffee/snof/readme.md"
-license = "MIT"
+readme = "readme.md"
 license-file = "license"
 
 [dependencies]
