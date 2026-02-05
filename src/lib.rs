@@ -1,23 +1,23 @@
 //! ### ❄️ snof
-//! 
+//!
 //! *snof* is a unique ID generator. Loosely based on snowflake ID-s, *snof*
 //! generates 64 bit long identifiers consisting of a 32 bit millisecond-based
 //! timestamp, and 22 bits of sequence distinguishing identifiers generated within
 //! the same millisecond.
-//! 
+//!
 //! The generator uses atomic operations for tracking state, thus it provides a
 //! thread-safe, lock-free way of generating unique ID-s. In case of the sequence
 //! being exhausted, or the clock moving backwards, the generator spins until
 //! validity is restored.
-//! 
+//!
 //! #### Usage
-//! 
+//!
 //! ```rust
 //! use snof::SnowflakeGenerator;
-//! 
+//!
 //! fn main() {
 //!     let generator = Arc::new(SnowflakeGenerator::new());
-//! 
+//!
 //!     let threads: Vec<_> = (0..4).map(|_| {
 //!         let other_generator = Arc::clone(&generator);
 //!         thread::spawn(move || {
@@ -25,7 +25,7 @@
 //!             println!("thread id: {}", id.0);
 //!         })
 //!     }).collect();
-//! 
+//!
 //!     for t in threads { t.join().unwrap(); }
 //! }
 //! ```
@@ -72,7 +72,7 @@ impl SnowflakeGenerator {
         loop {
             let last_ts = current_bits >> SEQUENCE_BITS;
             let last_seq = current_bits & SEQUENCE_MASK;
-            
+
             let now_ms = unix_timestamp_now_ms();
             let now_ts = u64::try_from(now_ms.saturating_sub(EPOCH))
                 .expect("Timestamp exceeds u64 capacity");
@@ -116,7 +116,8 @@ pub struct Snowflake(pub u64);
 impl Snowflake {
     /// Construct a [`Snowflake`] from timestamp and sequence.
     fn new(timestamp: u128, sequence: u64) -> Self {
-        let shifted = u64::try_from(timestamp - EPOCH).expect("Timestamp overflow") << SEQUENCE_BITS;
+        let shifted =
+            u64::try_from(timestamp - EPOCH).expect("Timestamp overflow") << SEQUENCE_BITS;
         Snowflake(shifted | (sequence & SEQUENCE_MASK))
     }
 
