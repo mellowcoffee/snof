@@ -65,7 +65,6 @@ pub struct SnowflakeGenerator {
     last_state: AtomicU64,
 }
 
-impl SnowflakeGenerator {
     /// Initializes a new [`SnowflakeGenerator`].
     ///
     /// The initial state is set to the current time with sequence 0.

@@ -1,4 +1,4 @@
-### ❄️ snof
+## ❄️ snof
 
 *snof* is a unique ID generator. Loosely based on Snowflake IDs, *snof*
 generates 64-bit identifiers composed of a 42-bit millisecond-precision
@@ -11,7 +11,7 @@ generation thread-safe and lock-free. When the per-millisecond sequence is
 exhausted, or the system clock moves backwards, the generator spins until
 validity is restored.
 
-#### Layout
+### Layout
 
 ```text
  63                    22 21          0
@@ -20,7 +20,7 @@ validity is restored.
 +------------------------+-------------+
 ```
 
-#### Usage
+### Usage
 
 ```rust
 use std::sync::Arc;
@@ -42,7 +42,7 @@ for t in threads {
 }
 ```
 
-##### Storing in a database
+#### Storing in a database
 
 Snowflakes are `u64`, but many stores (for example Postgres `bigint`) accept
 only signed 64-bit integers. Use `to_i64` / `from_i64`, which perform a
@@ -54,7 +54,7 @@ let stored: i64 = id.to_i64();
 assert_eq!(snof::Snowflake::from_i64(stored), id);
 ```
 
-##### Inspecting an ID
+#### Inspecting an ID
 
 ```rust
 let id = generator.generate();
