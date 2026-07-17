@@ -7,7 +7,7 @@ authors = ["mellowcoffee"]
 repository = "https://github.com/mellowcoffee/snof"
 homepage = "https://github.com/mellowcoffee/snof"
 readme = "readme.md"
-license-file = "license"
+license = "MIT"
 
 [dependencies]
 
