@@ -12,11 +12,35 @@ license = "MIT"
 [dependencies]
 
 [lints.rust]
+rust_2018_idioms = { level = "warn", priority = -1 }
+unused = { level = "warn", priority = -1 }
+
 unsafe_code = "forbid"
 missing_docs = "warn"
 unreachable_pub = "warn"
 
+let-underscore = "warn"
+missing_debug_implementations = "warn"
+nonstandard-style = "warn"
+
 [lints.clippy]
+all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
 cargo = { level = "warn", priority = -1 }
+
+cargo_common_metadata = "allow"
+
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+todo = "warn"
+dbg_macro = "warn"
+print_stdout = "warn"
+undocumented_unsafe_blocks = "warn"
+mem_forget = "deny"
+exit = "warn"
+rest_pat_in_fully_bound_structs = "warn"
+verbose_file_reads = "warn"
+str_to_string = "warn"
+implicit_clone = "warn"

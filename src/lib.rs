@@ -65,6 +65,7 @@ pub struct SnowflakeGenerator {
     last_state: AtomicU64,
 }
 
+impl SnowflakeGenerator {
     /// Initializes a new [`SnowflakeGenerator`].
     ///
     /// The initial state is set to the current time with sequence 0.
@@ -99,12 +100,12 @@ pub struct SnowflakeGenerator {
                         continue;
                     }
                     (last_ts << SEQUENCE_BITS) | next_seq
-                }
+                },
                 Ordering::Less => {
                     spin_loop();
                     current_bits = self.last_state.load(AtomicOrdering::Relaxed);
                     continue;
-                }
+                },
             };
 
             match self.last_state.compare_exchange_weak(
@@ -204,6 +205,7 @@ impl From<u64> for Snowflake {
 /// Panics if the current UNIX timestamp exceeds u64 capacity.
 #[must_use]
 pub fn unix_timestamp_now_ms() -> u64 {
+    #[allow(clippy::expect_used)]
     u64::try_from(
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
