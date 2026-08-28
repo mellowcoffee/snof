@@ -6,13 +6,6 @@ timestamp and a 22-bit sequence that distinguishes identifiers generated within
 the same millisecond. Timestamps are measured from a fixed epoch of Jan 01
 2026, giving the timestamp field a range of roughly 139 years.
 
-The generator tracks its entire state in a single atomic word, making ID
-generation thread-safe and lock-free. When the per-millisecond sequence is
-exhausted, or the system clock moves backwards, the generator spins until
-validity is restored.
-
-### Layout
-
 ```text
  63                    22 21          0
 +------------------------+-------------+
@@ -20,7 +13,19 @@ validity is restored.
 +------------------------+-------------+
 ```
 
+The generator tracks its entire state in a single atomic word, making ID
+generation thread-safe and lock-free. When the per-millisecond sequence is
+exhausted, or the system clock moves backwards, the generator spins until
+validity is restored.
+
+> [!NOTE]
+> snof is under development, breaking changes could be made to the API before
+> `1.0.0`. Please pin the version if you intend to use snof in a production
+> environment.
+
 ### Usage
+
+For detailed documentation, please refer to the [documentation](https://docs.rs/snof/latest/snof/).
 
 ```rust
 use std::sync::Arc;
@@ -40,25 +45,4 @@ let threads: Vec<_> = (0..4)
 for t in threads {
     t.join().unwrap();
 }
-```
-
-#### Storing in a database
-
-Snowflakes are `u64`, but many stores (for example Postgres `bigint`) accept
-only signed 64-bit integers. Use `to_i64` / `from_i64`, which perform a
-lossless bitwise reinterpret:
-
-```rust
-let id = generator.generate();
-let stored: i64 = id.to_i64();
-assert_eq!(snof::Snowflake::from_i64(stored), id);
-```
-
-#### Inspecting an ID
-
-```rust
-let id = generator.generate();
-let _ms: u64 = id.extract_unix_timestamp(); // UNIX ms, epoch-adjusted
-let _seq: u64 = id.sequence();
-let _raw: u64 = id.raw();
 ```

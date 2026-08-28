@@ -1,17 +1,10 @@
-//! ### ❄️ snof
+//! ## ❄️ snof
 //!
 //! *snof* is a unique ID generator. Loosely based on Snowflake IDs, *snof*
 //! generates 64-bit identifiers composed of a 42-bit millisecond-precision
 //! timestamp and a 22-bit sequence that distinguishes identifiers generated within
 //! the same millisecond. Timestamps are measured from a fixed epoch of Jan 01
 //! 2026, giving the timestamp field a range of roughly 139 years.
-//!
-//! The generator tracks its entire state in a single atomic word, making ID
-//! generation thread-safe and lock-free. When the per-millisecond sequence is
-//! exhausted, or the system clock moves backwards, the generator spins until
-//! validity is restored.
-//!
-//! #### Layout
 //!
 //! ```text
 //!  63                    22 21          0
@@ -20,7 +13,12 @@
 //! +------------------------+-------------+
 //! ```
 //!
-//! #### Usage
+//! The generator tracks its entire state in a single atomic word, making ID
+//! generation thread-safe and lock-free. When the per-millisecond sequence is
+//! exhausted, or the system clock moves backwards, the generator spins until
+//! validity is restored.
+//!
+//! ### Usage
 //!
 //! ```rust
 //! use std::sync::Arc;
@@ -30,6 +28,7 @@
 //!
 //! let generator = Arc::new(SnowflakeGenerator::new());
 //!
+//! // Thread-safe generation of ID-s.
 //! let threads: Vec<_> = (0..4)
 //!     .map(|_| {
 //!         let g = Arc::clone(&generator);
@@ -40,7 +39,24 @@
 //! for t in threads {
 //!     t.join().unwrap();
 //! }
+//!
+//! // Finding out when a timestamp was generated.
+//! let id = generator.generate();
+//! println!(
+//!     "{0} is a fairly recent UNIX timestamp.",
+//!     id.extract_unix_timestamp()
+//! );
+//! println!(
+//!     "At least {0} different ID-s were generated within the same millisecond",
+//!     id.sequence()
+//! );
+//!
+//! // Storing a Snowflake in a database that accepts i64-s.
+//! let stored: i64 = id.to_i64();
+//! assert_eq!(snof::Snowflake::from_i64(stored), id);
 //! ```
+//!
+//! For more details on usage, see [`SnowflakeGenerator`] and [`Snowflake`].
 
 use std::cmp::Ordering;
 use std::fmt;
@@ -56,9 +72,32 @@ const SEQUENCE_BITS: u32 = 22;
 /// Mask for extracting the sequence bits.
 const SEQUENCE_MASK: u64 = (1 << SEQUENCE_BITS) - 1;
 
-/// A thread-safe, lock-free Snowflake generator.
+/// A thread-safe, lock-free [`Snowflake`] generator.
 ///
-/// Initialize with [`SnowflakeGenerator::new()`].
+/// Initialize with [`SnowflakeGenerator::new()`], then use [`SnowflakeGenerator::generate()`] to
+/// generate Snowflakes.
+///
+/// # Example
+///
+/// ```rust
+/// use std::sync::Arc;
+/// use std::thread;
+///
+/// use snof::SnowflakeGenerator;
+///
+/// let generator = Arc::new(SnowflakeGenerator::new());
+///
+/// let threads: Vec<_> = (0..4)
+///     .map(|_| {
+///         let g = Arc::clone(&generator);
+///         thread::spawn(move || println!("{}", g.generate()))
+///     })
+///     .collect();
+///
+/// for t in threads {
+///     t.join().unwrap();
+/// }
+/// ```
 #[derive(Debug)]
 pub struct SnowflakeGenerator {
     /// Last generated snowflake.
@@ -127,7 +166,23 @@ impl Default for SnowflakeGenerator {
     }
 }
 
-/// [`Snowflake`] wrapper.
+/// [`Snowflake`] wrapper around a [`u64`] value.
+///
+/// Snowflakes are obtained through a [`SnowflakeGenerator`], or by reconstruction from an [`i64`]
+/// via [`Snowflake::from_i64`].
+///
+/// # Example
+///
+/// ```rust
+/// use std::sync::Arc;
+///
+/// use snof::SnowflakeGenerator;
+///
+/// let generator = SnowflakeGenerator::new();
+/// let id = generator.generate();
+/// let stored: i64 = id.to_i64();
+/// assert_eq!(snof::Snowflake::from_i64(stored), id);
+/// ```
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Snowflake(pub u64);
@@ -142,6 +197,9 @@ impl Snowflake {
     }
 
     /// Extract the sequence component of a [`Snowflake`].
+    ///
+    /// A sequence number of `n` means the Snowflake was the `n`-th to be generated within the same
+    /// millisecond.
     #[must_use]
     pub const fn sequence(self) -> u64 {
         self.0 & SEQUENCE_MASK
@@ -156,7 +214,8 @@ impl Snowflake {
     /// Reinterpret a [`Snowflake`] as a signed 64-bit integer.
     ///
     /// The conversion is a bitwise reinterpretation; it is lossless and reversed by
-    /// [`Snowflake::from_i64`].
+    /// [`Snowflake::from_i64`]. This is useful if the Snowflake has to be serialized to be stored
+    /// elsewhere, for example as a `bigint` in a Postgres database.
     #[allow(clippy::cast_possible_wrap)]
     #[must_use]
     pub const fn to_i64(self) -> i64 {
@@ -165,6 +224,11 @@ impl Snowflake {
 
     /// Reconstruct a [`Snowflake`] from the signed representation produced by
     /// [`Snowflake::to_i64`].
+    ///
+    /// The validity and structural integrity of the [`i64`] is not validated, plugging an arbitrary
+    /// `i64` into [`Snowflake::from_i64`] will cause [`Snowflake::sequence`] and
+    /// [`Snowflake::extract_unix_timestamp`] to produce gibberish. This function is only meant to
+    /// receive `i64`-s produced by [`Snowflake::to_i64`].
     #[allow(clippy::cast_sign_loss)]
     #[must_use]
     pub const fn from_i64(value: i64) -> Self {
@@ -198,11 +262,12 @@ impl From<u64> for Snowflake {
     }
 }
 
-/// Gets the current millisecond-based UNIX timestamp.
+/// Gets milliseconds elapsed since [`std::time::UNIX_EPOCH`].
 ///
 /// # Panics
 ///
-/// Panics if the current UNIX timestamp exceeds u64 capacity.
+/// Panics if the current UNIX timestamp exceeds u64 capacity. This won't happen for roughly half a
+/// billion years.
 #[must_use]
 pub fn unix_timestamp_now_ms() -> u64 {
     #[allow(clippy::expect_used)]
@@ -215,7 +280,7 @@ pub fn unix_timestamp_now_ms() -> u64 {
     .expect("Timestamp exceeds u64 capacity")
 }
 
-/// Current UNIX timestamp in milliseconds, relative to [`EPOCH`].
+/// Gets milliseconds elapsed since [`EPOCH`].
 fn epoch_relative_now() -> u64 {
     unix_timestamp_now_ms().saturating_sub(EPOCH)
 }

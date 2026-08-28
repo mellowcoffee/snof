@@ -14,14 +14,14 @@ license = "MIT"
 [lints.rust]
 rust_2018_idioms = { level = "warn", priority = -1 }
 unused = { level = "warn", priority = -1 }
+let_underscore = { level = "warn", priority = -1 }
+nonstandard_style = { level = "warn", priority = -1 }
 
 unsafe_code = "forbid"
 missing_docs = "warn"
 unreachable_pub = "warn"
 
-let-underscore = "warn"
 missing_debug_implementations = "warn"
-nonstandard-style = "warn"
 
 [lints.clippy]
 all = { level = "warn", priority = -1 }
