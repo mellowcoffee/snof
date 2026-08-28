@@ -185,7 +185,7 @@ impl Default for SnowflakeGenerator {
 /// ```
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Snowflake(pub u64);
+pub struct Snowflake(u64);
 
 impl Snowflake {
     /// Extract the millisecond-based UNIX timestamp of a [`Snowflake`].
@@ -201,7 +201,7 @@ impl Snowflake {
     /// A sequence number of `n` means the Snowflake was the `n`-th to be generated within the same
     /// millisecond.
     #[must_use]
-    pub const fn sequence(self) -> u64 {
+    pub const fn sequence(&self) -> u64 {
         self.0 & SEQUENCE_MASK
     }
 
