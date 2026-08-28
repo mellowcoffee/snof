@@ -25,7 +25,7 @@ validity is restored.
 
 ### Usage
 
-For detailed documentation, please refer to the [documentation](https://docs.rs/snof/latest/snof/).
+For more details on usage, please refer to the [documentation](https://docs.rs/snof/latest/snof/).
 
 ```rust
 use std::sync::Arc;
